@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+{% load static %}
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>Trần Khải Thiện - NLP</title>
+
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="{% static 'frontend/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'frontend/css/font-awesome.min.css' %}">
+		<link rel="stylesheet" href="{% static 'frontend/css/fonts.css' %}">
+        {% block extrastyle %}{% endblock %}
+        <link rel="stylesheet" href="{% static 'frontend/css/style.css' %}">
+	</head>
+	<body>
+		<header>
+			<div class="container">
+				<nav class="navbar navbar-expand-lg navbar-light bg-light">
+					<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="navbarText">
+						<ul class="navbar-nav mr-auto">
+							<li class="nav-item">
+								<a class="nav-link" href="/">Phân tích tình cảm câu</span></a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link" href="/phan-tich-tinh-cam-dua-tren-khia-canh">Phân tích tình cảm dựa trên khía cạnh</a>
+							</li>
+						</ul>
+					</div>
+				</nav>
+			</div>
+		</header>
+		<main id="main-content">
+			{% block content %}{% endblock %}
+		</main>
+		<footer>
+			<div class="absolute">
+				&copy; 2019
+			</div>
+			<script src="{% static 'frontend/js/jquery-3.4.1.min.js' %}"></script>
+			<script src="{% static 'frontend/js/popper.min.js' %}"></script>
+			<script src="{% static 'frontend/js/jquery-3.4.1.min.js' %}"></script>
+			<script src="{% static 'frontend/js/bootstrap.min.js' %}"></script>
+            <script src="{% static 'frontend/js/cio_helpers.js' %}"></script>
+			{% block extrascript %}{% endblock %}
+			<script src="{% static 'frontend/js/app.js' %}"></script>
+		</footer>
+	</body>
+</html>

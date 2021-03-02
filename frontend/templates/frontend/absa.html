@@ -1,0 +1,263 @@
+{% extends 'frontend/layouts/base.html' %}
+{% load static %}
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="form-group">
+                    <textarea class="form-control" id="input_data" rows="5" placeholder="Input"></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary btn-block" onclick="analyze()">Phân tích</button>
+                </div>
+
+                <hr>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="" id="hiddenDiagram" onchange="hiddenDiagramFunc()">
+                    <label class="form-check-label" for="hiddenDiagram">
+                    Ẩn biểu đồ
+                    </label>
+                </div>
+                <div id="myDiagramDiv" style="border: solid 1px black; width: 100%; height: 400px; margin-bottom: 30px;">
+
+                </div>
+
+                <div id="m-result" style="padding: 15px 0">
+
+                </div>
+
+                <div id="m-summary" style="padding: 15px 0">
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extrascript %}
+<script type="text/javascript" src="{% static 'frontend/js/axios.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'frontend/js/go.js' %}"></script>
+<script type="text/javascript" src="{% static 'frontend/js/gojs_helpers.js' %}"></script>
+<script type="text/javascript">
+    function hiddenDiagramFunc() {
+        if($('#hiddenDiagram').is(":checked")) {
+            $('#myDiagramDiv').css('display', 'none');
+        } else {
+            $('#myDiagramDiv').css('display', 'block');
+        }
+    }
+
+    function analyze() {
+        var input_data = $("#input_data").val().trim();
+        var csrftoken = getCookie('csrftoken');
+        var headers = {"X-CSRFToken": csrftoken};
+
+        if (!input_data) {
+            $("#input_data").focus();
+            return;
+        }
+
+        var api_url = '/api/v1/dependency_parsing';
+        var params = {
+            'input_data': input_data
+        }
+        axios.post(api_url, params, {'headers': headers})
+        .then(function (response) {
+            // draw graph
+            console.log(response['data']);
+            var raw_data = response['data'].raw_data;
+            var features = response['data'].features;
+            var sentences = response['data'].sentences;
+            var curr_x = 0;
+            var step_size = 150;
+
+            var graph_data = {
+                "class": "go.GraphLinksModel",
+                "nodeKeyProperty": "id",
+                "nodeDataArray": [
+                    { "id": 0, "loc": "0 0", "text": "<ROOT />" },
+                ],
+                "linkDataArray": []
+            };
+
+            var node_idx = 1;
+            for(var i = 0; i< raw_data.length; i++) {
+
+                for(var j = 0; j < raw_data[i].length; j++) {
+                    // calculate node's position
+                    curr_x += step_size;
+                    var node = {
+                        "id": node_idx++,
+                        "loc": curr_x + " 0",
+                        "text": raw_data[i][j]['txt']
+                    }
+                    graph_data["nodeDataArray"].push(node);
+                }
+            }
+
+            var begin_idx = 1;
+            for(var i = 0; i < raw_data.length; i++) {
+                for(var j = 0; j<raw_data[i].length; j++) {
+                    var l_from = 0;
+                    if (raw_data[i][j]['depend_on'] != null) {
+                        l_from = begin_idx + raw_data[i][j]['depend_on'];
+                    }
+                    var l_to = begin_idx + j;
+                    var curviness = Math.abs(l_to - l_from) * 30;
+                    link = {
+                        'text': raw_data[i][j]['kind'],
+                        'curviness': curviness,
+                        'from': l_from,
+                        'to': l_to
+                    };
+
+                    graph_data["linkDataArray"].push(link);
+                }
+                begin_idx += raw_data[i].length;
+            }
+            myDiagram.model = go.Model.fromJson(graph_data);
+
+
+            var html = "<table class='table table-bordered'>";
+
+            for(var i = 0; i < sentences.length; i++) {
+
+                html += "<tr><td class='table-primary' colspan='2'>" + sentences[i] + "</td></tr>";
+
+                for(var j = 0; j < features[i].length; j++) {
+                    var feature_rule = features[i][j]['rule'];
+                    var first_obj_id = features[i][j]['obj_1_idx'];
+                    var second_obj_id = features[i][j]['obj_2_idx'];
+                    var feature_score = raw_data[i][first_obj_id]['score'] + raw_data[i][second_obj_id]['score'];
+                    var first_obj = raw_data[i][first_obj_id]['txt'];
+                    var second_obj = raw_data[i][second_obj_id]['txt'];
+
+                    if (raw_data[i][first_obj_id]['original_score']) {
+                        first_obj += '<small>('+raw_data[i][first_obj_id]['original_score']+')</small>'
+                    }
+
+                    if (raw_data[i][second_obj_id]['original_score']) {
+                        second_obj += '<small>('+raw_data[i][second_obj_id]['original_score']+')</small>'
+                    }
+
+
+                    if (raw_data[i][first_obj_id]['mod'].length > 0) {
+                        var mod_idx = raw_data[i][first_obj_id]['mod'][0];
+                        if (mod_idx != first_obj_id) {
+                            if (mod_idx < second_obj_id) {
+                                first_obj = raw_data[i][mod_idx]['txt'] + ' ' + first_obj;
+                            } else {
+                                first_obj = first_obj + ' ' + raw_data[i][mod_idx]['txt'];
+                            }
+                        }
+                    }
+
+                    if (raw_data[i][second_obj_id]['mod'].length > 0) {
+                        var mod_idx = raw_data[i][second_obj_id]['mod'][0];
+                        if (mod_idx != first_obj_id) {
+                            if (mod_idx < second_obj_id) {
+                                second_obj = raw_data[i][mod_idx]['txt'] + ' ' + second_obj;
+                            } else {
+                                second_obj = second_obj + ' ' + raw_data[i][mod_idx]['txt'];
+                            }
+                        }
+                    }
+
+
+                    html += "<tr>";
+                    html += "<td>" + first_obj + " - " + second_obj + "</td>";
+                    html += "<td>" + feature_score + "</td>";
+                    html += "</tr>";
+                }
+
+            }
+
+            html += "<table />";
+            $("#m-result").empty();
+            $("#m-result").append(html);
+
+
+
+            // Summary
+            var summary = {};
+            for(var i = 0; i < sentences.length; i++) {
+                for(var j = 0; j < features[i].length; j++) {
+                    var feature_rule = features[i][j]['rule'];
+                    var first_obj_id = features[i][j]['obj_1_idx'];
+                    var second_obj_id = features[i][j]['obj_2_idx'];
+                    var feature_score = raw_data[i][first_obj_id]['score'] + raw_data[i][second_obj_id]['score'];
+                    var first_obj = raw_data[i][first_obj_id];
+                    var second_obj = raw_data[i][second_obj_id];
+
+                    var sub = false;
+                    if (first_obj['type'] == 'N') {
+                        sub =  first_obj['txt'];
+
+                        if (raw_data[i][first_obj_id]['mod'].length > 0) {
+                            var mod_idx = raw_data[i][first_obj_id]['mod'][0];
+                            if (mod_idx != second_obj_id) {
+                                if (mod_idx < first_obj_id) {
+                                    sub = raw_data[i][mod_idx]['txt'] + ' ' + sub;
+                                } else {
+                                    sub = sub + ' ' + raw_data[i][mod_idx]['txt'];
+                                }
+                            }
+                        }
+
+
+                    } else if (second_obj['type'] == 'N') {
+                        sub =  second_obj['txt'];
+
+                        if (raw_data[i][second_obj_id]['mod'].length > 0) {
+                            var mod_idx = raw_data[i][second_obj_id]['mod'][0];
+                            if (mod_idx != first_obj_id) {
+                                if (mod_idx < second_obj_id) {
+                                    sub = raw_data[i][mod_idx]['txt'] + ' ' + sub;
+                                } else {
+                                    sub = sub + ' ' + raw_data[i][mod_idx]['txt'];
+                                }
+                            }
+
+                        }
+                    }
+
+                    if(sub) {
+                        if (sub in summary) {
+                            summary[sub] += feature_score;
+                        } else {
+                            summary[sub] = feature_score;
+                        }
+                    }
+
+                }
+            } // end summary
+            var summary_size = Object.keys(summary).length
+            if (summary_size) {
+                var html = "<h3>Tổng kết</h3>";
+
+                html += "<table class='table table-striped'>";
+
+                const keys = Object.keys(summary);
+                for (var i = 0; i< summary_size; i++) {
+                    html += "<tr>";
+                    html += "<td>"+keys[i]+"</td>";
+                    html += "<td>"+summary[keys[i]]+"</td>";
+                    html += "</tr>";
+                }
+
+                html += "</table>";
+                $("#m-summary").empty();
+                $("#m-summary").append(html);
+
+            }
+
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+
+    $(document).ready(function() {
+        absa_init();
+    });
+</script>
+{% endblock %}

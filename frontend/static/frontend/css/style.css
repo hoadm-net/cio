@@ -1,0 +1,113 @@
+/* Global */
+body {
+    font-family: Roboto, Arial;
+}
+
+
+/* Header */
+header {
+    background-color: #f8f9fa;
+}
+
+
+/* Main */
+#main-content {
+    padding: 30px 0 15px 0;
+}
+
+/* Footer */
+footer .absolute{
+    background-color: #2E2E2E;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+}
+
+
+/* Utilities */
+.wl {
+    padding: 5px;
+    border-radius: 5px;
+    background-color: #2E2E2E;
+    color: #fff;
+    font-size: 12px;
+    margin-right: 3px;
+}
+.wl.wt-a {
+    background-color: #ff4444;
+}
+
+.wl.wt-c {
+    background-color: #ffbb33;
+}
+
+.wl.wt-e {
+    background-color: #00C851;
+}
+
+.wl.wt-i {
+    background-color: #33b5e5;
+}
+
+.wl.wt-l {
+    background-color: #2BBBAD;
+}
+
+.wl.wt-m {
+    background-color: #4285F4;
+}
+
+.wl.wt-n {
+    background-color: #aa66cc;
+}
+
+.wl.wt-nc {
+    background-color: #3F729B;
+}
+
+.wl.wt-ny {
+    background-color: #6200ea;
+}
+
+.wl.wt-np {
+    background-color: #2962ff;
+}
+
+.wl.wt-nu {
+    background-color: #0091ea;
+}
+
+.wl.wt-p {
+    background-color: #00b8d4;
+}
+
+.wl.wt-r {
+    background-color: #1de9b6;
+}
+
+.wl.wt-s {
+    background-color: #00e676;
+}
+
+.wl.wt-t {
+    background-color: #f57f17;
+}
+
+.wl.wt-v {
+    background-color: #5d4037;
+}
+
+.wl.wt-f {
+    background-color: #1c2a48;
+}
+
+.wl.wt-x {
+    background-color: #2E2E2E;
+}
+#result {
+    padding: 15px;
+}
+#result span.wl {
+    color: #000;
+    font-size: 14px;
+}

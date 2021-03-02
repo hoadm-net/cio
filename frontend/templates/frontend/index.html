@@ -1,0 +1,170 @@
+{% extends 'frontend/layouts/base.html' %}
+{% load static %}
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="form-group">
+                    <textarea class="form-control" id="input_data" rows="5" placeholder="Input"></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary btn-block" onclick="analyze()">Phân tích</button>
+                </div>
+
+                <hr>
+
+                <div id="result">
+
+                </div>
+            </div>
+            <div class="col-md-4">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th scope="col">Ký hiệu</th>
+                            <th scope="col">Ý nghĩa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>A</td>
+                            <td><span class="wl wt-a">Adjective</span></td>
+                        </tr>
+                        <tr>
+                            <td>C</td>
+                            <td><span class="wl wt-c">Coordinating conjunction</span></td>
+                        </tr>
+                        <tr>
+                            <td>E</td>
+                            <td><span class="wl wt-e">Preposition</span></td>
+                        </tr>
+                        <tr>
+                            <td>I</td>
+                            <td><span class="wl wt-i">Interjection</span></td>
+                        </tr>
+                        <tr>
+                            <td>L</td>
+                            <td><span class="wl wt-l">Determiner</span></td>
+                        </tr>
+                        <tr>
+                            <td>M</td>
+                            <td><span class="wl wt-m">Numeral</span></td>
+                        </tr>
+                        <tr>
+                            <td>N</td>
+                            <td><span class="wl wt-n">Common noun</span></td>
+                        </tr>
+                        <tr>
+                            <td>Nc</td>
+                            <td><span class="wl wt-nc">Noun Classifier</span></td>
+                        </tr>
+                        <tr>
+                            <td>Ny</td>
+                            <td><span class="wl wt-ny">Noun abbreviation</span></td>
+                        </tr>
+                        <tr>
+                            <td>Np</td>
+                            <td><span class="wl wt-np">Proper noun</span></td>
+                        </tr>
+                        <tr>
+                            <td>Nu</td>
+                            <td><span class="wl wt-nu">Unit noun</span></td>
+                        </tr>
+                        <tr>
+                            <td>P</td>
+                            <td><span class="wl wt-p">Pronoun</span></td>
+                        </tr>
+                        <tr>
+                            <td>R</td>
+                            <td><span class="wl wt-r">Adverb</span></td>
+                        </tr>
+                        <tr>
+                            <td>S</td>
+                            <td><span class="wl wt-s">Subordinating conjunction</span></td>
+                        </tr>
+                        <tr>
+                            <td>T</td>
+                            <td><span class="wl wt-t">Auxiliary, modal words</span></td>
+                        </tr>
+                        <tr>
+                            <td>V</td>
+                            <td><span class="wl wt-v">Verb</span></td>
+                        </tr>
+                        <tr>
+                            <td>X</td>
+                            <td><span class="wl wt-x">Unknown</span></td>
+                        </tr>
+                        <tr>
+                            <td>F</td>
+                            <td><span class="wl wt-f">Filtered out (punctuation)</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extrascript %}
+<script type="text/javascript" src="{% static 'frontend/js/axios.min.js' %}"></script>
+<script type="text/javascript">
+    function analyze() {
+        var input_data = $("#input_data").val();
+        var csrftoken = getCookie('csrftoken');
+        var headers = {"X-CSRFToken": csrftoken};
+
+        if (!input_data) {
+            $("#input_data").focus();
+            return;
+        }
+
+        var api_url = '/api/v1/sentiment_analyze';
+        var params = {
+            'input_data': input_data
+        }
+        axios.post(api_url, params, {'headers': headers})
+        .then(function (response) {
+            var data = response['data'].analyzed_data;
+            var html = "<p>";
+            var word_type = {
+                'none': '<i class="fa fa-hand-rock-o" aria-hidden="true"></i> none',
+                1: '<i class="fa fa-thumbs-o-down" aria-hidden="true"></i> neg',
+                2: '<i class="fa fa-thumbs-o-up" aria-hidden="true"></i> pos'
+            };
+            for(var i = 0; i < data.length; i++) {
+                html += '<span class="wl wt-'+data[i]['type'].toLowerCase()+'">'+data[i]['txt']+'</span>'
+            }
+            html += "<p>";
+
+            html += "<table class='table table-bordered table-tripped'><thead><tr><th scope='col'>#</th><th scope='col'>Từ</th><th scope='col'>Loại</th><th scope='col'>Sắc thái</th><th scope='col'>Điểm</th></tr></thead>";
+
+            var total = 0;
+            for(var i = 0; i < data.length; i++) {
+                var original_html = '';
+                if (data[i]['original_score']) {
+                    original_html += ' <small>('+data[i]['original_score']+')</small>'
+                }
+
+                html += '<tr>';
+                html += '<td>'+(i+1)+'</td>';
+                html += '<td>'+data[i]['txt']+'</td>';
+                html += '<td>'+data[i]['type']+'</td>';
+                html += '<td>'+word_type[data[i]['sentiment']]+'</td>';
+                html += '<td>'+data[i]['score']+original_html+'</td>';
+                html += '</tr>';
+
+                total += parseFloat(data[i]['score'])
+            }
+
+            html += '<tfoot><tr><th scope="row">Tổng điểm</th><td colspan="4" class="text-right">'+total+'</td></tr></tfoot>';
+            html += '</table>';
+
+            $("#result").empty();
+            $("#result").append(html)
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+</script>
+{% endblock %}
